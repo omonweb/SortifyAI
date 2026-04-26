@@ -12,7 +12,7 @@ app.use(express.json());
 
 // Test route
 app.get("/", (req, res) => {
-  res.send("SortifyAI Backend Running 🚀");
+  res.send("SortifyAI Backend Running ");
 });
 
 // Test Firestore route
@@ -24,10 +24,10 @@ app.get("/test-db", async (req, res) => {
       timestamp: new Date(),
     });
 
-    res.send("Data written to Firestore ✅");
+    res.send("Data written to Firestore ");
   } catch (error) {
     console.error(error);
-    res.status(500).send("Error connecting to Firestore ❌");
+    res.status(500).send("Error connecting to Firestore ");
   }
 });
 
