@@ -11,16 +11,27 @@ export default function Dashboard() {
   const [title, setTitle] = useState("");
   const [jd, setJd] = useState("");
   const [skills, setSkills] = useState("");
+  const [jobs, setJobs] = useState([]);
+  const [isOpen, setIsOpen] = useState(true);
   const router = useRouter();
 
-  const handleCreateJob = async () => {
+const handleCreateJob = async () => {
   try {
-    await axios.post("http://localhost:5000/jobs", {
+    const res = await axios.post("http://localhost:5000/jobs", {
       title,
       jd,
       skills: skills.split(","),
       userId: user.uid,
     });
+
+    const newJob = {
+      id: res.data.id,
+      title,
+      jd,
+      skills: skills.split(","),
+    };
+
+    setJobs((prev) => [...prev, newJob]);
 
     alert("Job created!");
     setTitle("");
@@ -32,55 +43,85 @@ export default function Dashboard() {
   }
 };
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (currentUser) => {
-      if (!currentUser) {
-        router.push("/login");
-      } else {
-        setUser(currentUser);
-      }
-    });
+useEffect(() => {
+  const unsub = onAuthStateChanged(auth, async (currentUser) => {
+    if (!currentUser) {
+      router.push("/login");
+    } else {
+      setUser(currentUser);
 
-    return () => unsub();
-  }, []);
+      // fetch jobs
+      const res = await axios.get(
+        `http://localhost:5000/jobs/${currentUser.uid}`
+      );
+      setJobs(res.data);
+    }
+  });
+
+  return () => unsub();
+}, []);
 
   if (!user) return <p className="text-center mt-10">Loading...</p>;
 
-    return (
-  <div className="p-6 max-w-xl mx-auto">
-    <h1 className="text-2xl font-bold mb-4">
-      Welcome, {user.email}
-    </h1>
+return (
+  <div className="flex h-screen p-4 gap-4">
+    
+    {/* Sidebar */}
+    <div className="w-56 glass p-4">
+      <h2 className="text-lg font-semibold mb-4">Jobs</h2>
 
-    <h2 className="text-xl mb-2">Create Job</h2>
+      {jobs.map((job) => (
+        <div
+          key={job.id}
+          className="p-2 rounded cursor-pointer hover:bg-white/40"
+          onClick={() => router.push(`/job/${job.id}`)}
+        >
+          {job.title}
+        </div>
+      ))}
+    </div>
 
-    <input
-      className="border p-2 w-full mb-2"
-      placeholder="Job Title"
-      value={title}
-      onChange={(e) => setTitle(e.target.value)}
-    />
+    {/* Main */}
+    <div className="flex-1 flex flex-col gap-4">
 
-    <textarea
-      className="border p-2 w-full mb-2"
-      placeholder="Job Description"
-      value={jd}
-      onChange={(e) => setJd(e.target.value)}
-    />
+      {/* Header */}
+      <div className="glass p-4 flex justify-between items-center">
+        <h1 className="text-xl font-semibold">
+          Welcome back, <span className="font-bold">{user.email}</span>
+        </h1>
+      </div>
 
-    <input
-      className="border p-2 w-full mb-2"
-      placeholder="Skills (comma separated)"
-      value={skills}
-      onChange={(e) => setSkills(e.target.value)}
-    />
+      {/* Create Job Card */}
+      <div className="glass p-6 max-w-xl glass-hover">
+        <h2 className="text-lg font-semibold mb-4">Create Job</h2>
 
-    <button
-      onClick={handleCreateJob}
-      className="bg-blue-500 text-white px-4 py-2"
-    >
-      Create Job
-    </button>
+        <input
+          className="input mb-3"
+          placeholder="Job Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+
+        <textarea
+          className="input mb-3"
+          placeholder="Job Description"
+          value={jd}
+          onChange={(e) => setJd(e.target.value)}
+        />
+
+        <input
+          className="input mb-4"
+          placeholder="Skills (comma separated)"
+          value={skills}
+          onChange={(e) => setSkills(e.target.value)}
+        />
+
+        <button onClick={handleCreateJob} className="btn-primary">
+          Create Job
+        </button>
+      </div>
+
+    </div>
   </div>
 );
 }

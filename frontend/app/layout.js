@@ -1,5 +1,9 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, DM_Sans } from "next/font/google";
 import "./globals.css";
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,7 +26,40 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      {/* Merged the dmSans class with your Tailwind utility classes here */}
+      <body className={`${dmSans.className} min-h-full flex flex-col`}>
+
+  <div className="min-h-screen">
+
+    {/* Navbar */}
+    <div className="glass mx-4 mt-4 p-4 flex justify-between items-center">
+
+      {/* Left */}
+      <h1 className="text-lg font-semibold">
+        SortifyAI
+      </h1>
+
+      {/* Right */}
+      <div className="flex items-center gap-4">
+        <span className="text-sm text-gray-600">
+          Recruiter
+        </span>
+
+        <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center">
+          O
+        </div>
+      </div>
+
+    </div>
+
+    {/* Page Content */}
+    <div className="mt-4 flex-1">
+      {children}
+    </div>
+
+  </div>
+
+</body>
     </html>
   );
 }
