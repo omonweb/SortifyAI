@@ -1,60 +1,89 @@
 @import "tailwindcss";
 
-/* :root {
-  --background: #ffffff;
-  --foreground: #171717;
-} */
+:root {
+  --bg-ink: #1b2438;
+  --bg-mist: #f6efe8;
+  --brand-coral: #e85d4a;
+  --brand-sand: #f4a58a;
+  --line-soft: rgba(255, 255, 255, 0.72);
+}
 
-/* @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-} */
+* {
+  box-sizing: border-box;
+}
 
-/* === SORTIFYAI DESIGN SYSTEM === */
+html {
+  min-height: 100%;
+}
 
 body {
-  font-family: 'DM Sans', sans-serif;
-  background: linear-gradient(
-    135deg,
-    #c8d8f0,
-    #ddd6f3,
-    #f0e6f6
-  );
   min-height: 100vh;
+  color: var(--bg-ink);
+  font-family: var(--font-dm-sans), sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(244, 165, 138, 0.42), transparent 30%),
+    radial-gradient(circle at 85% 20%, rgba(168, 190, 255, 0.35), transparent 24%),
+    linear-gradient(140deg, #dce8f8 0%, #efe6f7 42%, #f7efe8 100%);
+  background-attachment: fixed;
 }
 
-/* Glass card */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.75), transparent);
+  opacity: 0.25;
+}
+
 .glass {
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(22px);
+  border: 1px solid var(--line-soft);
+  border-radius: 24px;
+  box-shadow: 0 18px 40px rgba(28, 36, 51, 0.08);
 }
 
-/* Hover lift */
 .glass-hover:hover {
   transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.75);
-  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.76);
+  transition: all 0.24s ease;
 }
 
-/* Button */
 .btn-primary {
-  background: #e85d4a;
+  background: linear-gradient(135deg, var(--brand-coral), #d64f3d);
   color: white;
-  padding: 10px 16px;
+  padding: 11px 18px;
   border-radius: 9999px;
-  font-weight: 500;
+  font-weight: 600;
+  box-shadow: 0 14px 26px rgba(232, 93, 74, 0.22);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
-/* Input */
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 30px rgba(232, 93, 74, 0.28);
+}
+
 .input {
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 10px;
-  padding: 10px;
   width: 100%;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.74);
+  padding: 10px 12px;
   outline: none;
+}
+
+.orb-logo {
+  background: radial-gradient(circle at 35% 35%, #f8c4af, #e85d4a 60%, #bf3e31);
+}
+
+@media (max-width: 767px) {
+  body::before {
+    background-size: 32px 32px;
+    opacity: 0.2;
+  }
 }

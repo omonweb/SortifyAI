@@ -23,6 +23,135 @@ model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # ─── TEXT EXTRACTION ────────────────────────────────────────────────────────
 
+PERSONAL_SECTION_HEADINGS = {
+    "personal details",
+    "personal information",
+    "contact details",
+    "contact information",
+    "profile",
+    "about me",
+    "about",
+}
+
+WORK_SECTION_HEADINGS = {
+    "experience",
+    "work experience",
+    "employment",
+    "professional experience",
+    "projects",
+    "project",
+    "education",
+    "skills",
+    "technical skills",
+    "certifications",
+    "internships",
+    "achievements",
+}
+
+ROLE_TITLE_WORDS = {
+    "analyst",
+    "architect",
+    "consultant",
+    "data",
+    "designer",
+    "developer",
+    "engineer",
+    "intern",
+    "lead",
+    "manager",
+    "product",
+    "program",
+    "qa",
+    "scientist",
+    "software",
+    "specialist",
+    "student",
+    "tester",
+}
+
+COMMON_CITY_PATTERN = re.compile(
+    r"\b(?:"
+    r"delhi|new delhi|mumbai|bangalore|bengaluru|hyderabad|pune|chennai|kolkata|gurgaon|gurugram|"
+    r"noida|ahmedabad|surat|jaipur|lucknow|kanpur|indore|bhopal|patna|nagpur|kochi|coimbatore|"
+    r"mysore|visakhapatnam|vijayawada|thiruvananthapuram|new york|san francisco|seattle|austin|"
+    r"boston|chicago|los angeles|atlanta|dallas|london|dubai|singapore"
+    r")\b",
+    re.IGNORECASE,
+)
+
+SEMANTIC_REDACTIONS = [
+    # Honorifics and pronouns add identity hints but no hiring signal.
+    (re.compile(r"\b(?:mr|mrs|ms|miss|mx|sir|madam)\.?\b", re.IGNORECASE), " "),
+    (
+        re.compile(
+            r"\b(?:he|him|his|himself|she|her|hers|herself|they|them|their|theirs)\b",
+            re.IGNORECASE,
+        ),
+        " ",
+    ),
+    (
+        re.compile(
+            r"\b(?:male|female|man|woman|gender\s*:\s*\w+)\b",
+            re.IGNORECASE,
+        ),
+        " ",
+    ),
+    # Age and birth date should never influence the semantic embedding.
+    (
+        re.compile(
+            r"\b(?:age|aged)\s*[:\-]?\s*\d{1,2}\b|\b\d{1,2}\s+years?\s+old\b",
+            re.IGNORECASE,
+        ),
+        " [AGE REMOVED] ",
+    ),
+    (
+        re.compile(
+            r"\b(?:dob|date of birth|birth date)\s*[:\-]?\s*[^\n,;|]+",
+            re.IGNORECASE,
+        ),
+        " [DOB REMOVED] ",
+    ),
+    # Personal descriptors that can introduce social bias.
+    (
+        re.compile(
+            r"\b(?:hindu|muslim|christian|sikh|jain|buddhist|religion)\b",
+            re.IGNORECASE,
+        ),
+        " [RELIGION REMOVED] ",
+    ),
+    (
+        re.compile(
+            r"\b(?:brahmin|rajput|reddy|iyer|iyengar|agarwal|aggarwal|jatt|gupta|sharma|nair|caste)\b",
+            re.IGNORECASE,
+        ),
+        " [CASTE REMOVED] ",
+    ),
+    (
+        re.compile(
+            r"\b(?:single|married|divorced|widowed|marital status)\b",
+            re.IGNORECASE,
+        ),
+        " [MARITAL STATUS REMOVED] ",
+    ),
+    (
+        re.compile(
+            r"\b(?:attached photo|see photograph|photograph|passport size photo|photo)\b",
+            re.IGNORECASE,
+        ),
+        " [PHOTO REMOVED] ",
+    ),
+    # Contact details are useful operationally, but not for semantic ranking.
+    (
+        re.compile(r"[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}", re.IGNORECASE),
+        " [EMAIL REMOVED] ",
+    ),
+    (
+        re.compile(r"(?:\+?\d[\d\s().-]{7,}\d)"),
+        " [PHONE REMOVED] ",
+    ),
+]
+
+
 def extract_pdf(file_bytes: bytes) -> str:
     reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
     text = ""
@@ -107,6 +236,97 @@ def extract_name(filename: str, text: str) -> str:
     return extract_name_from_text(text)
 
 
+def normalize_heading(line: str) -> str:
+    return re.sub(r"[^a-z\s]", "", line.lower()).strip()
+
+
+def classify_section(line: str, current_section: str | None) -> str | None:
+    heading = normalize_heading(line)
+    if heading in PERSONAL_SECTION_HEADINGS:
+        return "personal"
+    if heading in WORK_SECTION_HEADINGS:
+        return "work"
+    return current_section
+
+
+def looks_like_name_line(line: str) -> bool:
+    words = line.strip().split()
+    if not 1 < len(words) <= 4:
+        return False
+    if len(line.strip()) > 40:
+        return False
+    if any(word.lower() in ROLE_TITLE_WORDS for word in words):
+        return False
+    return all(re.fullmatch(r"[A-Za-z][A-Za-z'.-]*", word) for word in words)
+
+
+def redact_name(text: str, name: str) -> str:
+    if not name or name == "Unknown Candidate":
+        return text
+
+    pattern = r"\b" + r"\s+".join(re.escape(part) for part in name.split()) + r"\b"
+    return re.sub(pattern, " [NAME REMOVED] ", text, flags=re.IGNORECASE)
+
+
+def redact_location_line(line: str) -> str:
+    if re.search(
+        r"\b(?:address|location|current location|city|based in|residing in)\b",
+        line,
+        re.IGNORECASE,
+    ):
+        return re.sub(
+            r"(?i)\b(?:address|location|current location|city|based in|residing in)\b\s*[:\-]?\s*[^\n]+",
+            " [LOCATION REMOVED] ",
+            line,
+        )
+
+    return COMMON_CITY_PATTERN.sub(" [LOCATION REMOVED] ", line)
+
+
+def sanitize_for_semantic_scoring(text: str, name: str) -> str:
+    """
+    Removes personal identifiers before generating semantic embeddings.
+    Raw text is preserved elsewhere for skill, experience, and education extraction.
+    """
+    lines = text.splitlines()
+    sanitized_lines = []
+    current_section = None
+
+    for index, original_line in enumerate(lines):
+        line = original_line
+        current_section = classify_section(line, current_section)
+        is_header_zone = index < 8 and current_section != "work"
+
+        if (
+            is_header_zone
+            and looks_like_name_line(line)
+            and normalize_heading(line) not in WORK_SECTION_HEADINGS
+        ):
+            line = " [NAME REMOVED] "
+        else:
+            line = redact_name(line, name)
+
+        for pattern, replacement in SEMANTIC_REDACTIONS:
+            line = pattern.sub(replacement, line)
+
+        # Only strip location cues from header/personal areas so employer locations remain intact.
+        if current_section == "personal" or is_header_zone:
+            line = redact_location_line(line)
+
+        # Clean common personal-info labels near the top of the resume.
+        if current_section == "personal" or is_header_zone:
+            line = re.sub(
+                r"(?i)\b(?:nationality|father'?s name|mother'?s name)\b\s*[:\-]?\s*[^\n]+",
+                " [PERSONAL INFO REMOVED] ",
+                line,
+            )
+
+        sanitized_lines.append(re.sub(r"\s{2,}", " ", line).strip())
+
+    sanitized_text = "\n".join(line for line in sanitized_lines if line)
+    return sanitized_text if sanitized_text.strip() else text
+
+
 def extract_experience(text: str) -> float:
     """
     Finds all occurrences of patterns like '3 years', '5+ yrs', '2.5 years'.
@@ -131,6 +351,11 @@ def extract_education(text: str) -> str:
     if any(kw in text_lower for kw in ["bachelor", "b.tech", "bsc", "b.sc", "b.e", "undergraduate"]):
         return "bachelor"
     return "unknown"
+
+
+def extract_email(text: str) -> str | None:
+    matches = re.findall(r"[\w.+-]+@[\w-]+\.[a-zA-Z]{2,}", text)
+    return matches[0] if matches else None
 
 
 def match_skills(resume_text: str, jd_skills: list[str]) -> tuple[list[str], list[str]]:
@@ -278,6 +503,7 @@ async def evaluate(
     for file in files:
         text = extract_text(file)
         name = extract_name(file.filename, text)
+        email = extract_email(text)
 
         if not text.strip():
             # Unparseable resume — zero everything
@@ -293,12 +519,14 @@ async def evaluate(
                 },
                 "matchedSkills": [],
                 "missingSkills": jd_skills,
+                "email": email,
                 "summary": "Could not extract text from this resume.",
             })
             continue
 
         # ── Layer 1: Semantic score ──────────────────────────────────────
-        resume_embedding = model.encode(text, convert_to_tensor=True)
+        sanitized_text = sanitize_for_semantic_scoring(text, name)
+        resume_embedding = model.encode(sanitized_text, convert_to_tensor=True)
         semantic_score = round(
             util.cos_sim(jd_embedding, resume_embedding).item() * 100, 2
         )
@@ -336,6 +564,7 @@ async def evaluate(
             },
             "matchedSkills": matched_skills[:6],
             "missingSkills": missing_skills[:6],
+            "email": email,
             "summary": summary,
         })
 
