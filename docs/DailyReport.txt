@@ -1,0 +1,61 @@
+
+
+Target for Day 2:
+````````````````
+
+Application Starts
+      ↓
+Hibernate Creates Tables
+      ↓
+User Entity Exists
+      ↓
+Job Entity Exists
+      ↓
+Candidate Entity Exists
+      ↓
+ProcessingEvent Entity Exists
+      ↓
+Repositories Exist
+      ↓
+Database Schema Verified
+
+
+---------------------------------
+
+JSON Request
+     ↓
+SignupRequest DTO
+     ↓
+Validation
+     ↓
+Service
+     ↓
+User Entity
+     ↓
+Database
+
+-----------------------------------
+
+Benefits:
+`````````
+    Immutable
+    Less code
+    Perfect for DTOs
+    
+    Automatically generates:
+        constructor
+        getters
+        equals
+        hashCode
+        toString
+
+Tasks:
+``````
+    1. created a package for each 'feature' i.e. candidate, event, job, User
+        instead of creating packages for dto, entity and repository which would lead to
+        confusions later on as features increase, this makes it easier to separate the concerns.
+    
+    2. created a 'common' folder that holds the enums which ensure data integrity and structure is maintained,
+        meaning no ambiguity or mismatch on the basis of the way a state is typed.
+    
+    3. 
