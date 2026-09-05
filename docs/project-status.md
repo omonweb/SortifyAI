@@ -5,6 +5,8 @@
 **Date:** Current Development Snapshot
 **Status:** Infrastructure Complete, Domain Layer Pending
 
+> **Current checkpoint update (2026-09-05):** The Day 1–4 backend-core foundation is now complete. Flyway version 1 owns the `users`, `jobs`, and `candidates` schema; Hibernate is configured with `ddl-auto=validate`; the three entities and repositories are wired and verified against Docker PostgreSQL. This supersedes the historical statements below that describe Hibernate-created tables, missing domain entities, or Node.js as the target ingestion boundary. See [`backend-core/day1-4-execution-log.md`](backend-core/day1-4-execution-log.md) and [`backend-core/day1-4-decisions.md`](backend-core/day1-4-decisions.md).
+
 ---
 
 # Executive Summary

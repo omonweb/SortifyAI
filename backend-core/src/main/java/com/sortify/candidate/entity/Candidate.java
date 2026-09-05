@@ -1,7 +1,7 @@
-package com.sortify.job.entity;
+package com.sortify.candidate.entity;
 
-import com.sortify.common.JobStatus;
-import com.sortify.user.entity.User;
+import com.sortify.common.CandidateStatus;
+import com.sortify.job.entity.Job;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -25,33 +25,46 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
 
 @Entity
-@Table(name = "jobs", indexes = {
-        @Index(name = "idx_jobs_user_id", columnList = "user_id")
+@Table(name = "candidates", indexes = {
+        @Index(name = "idx_candidates_job_score", columnList = "job_id, score DESC"),
+        @Index(name = "idx_candidates_status", columnList = "status")
 })
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Job {
+public class Candidate {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "job_id", nullable = false)
+    private Job job;
 
-    @Column(nullable = false, length = 200)
-    private String title;
+    @Column(length = 200)
+    private String name;
 
-    @Column(name = "jd", nullable = false, columnDefinition = "TEXT")
-    private String jd;
+    @Column(length = 255)
+    private String email;
+
+    @Column
+    private Double score;
+
+    @Column(name = "resume_key", columnDefinition = "TEXT")
+    private String resumeKey;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
-    private JobStatus status;
+    private CandidateStatus status;
+
+    @Column(name = "failure_reason", columnDefinition = "TEXT")
+    private String failureReason;
+
+    @Column(name = "processed_at")
+    private Instant processedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

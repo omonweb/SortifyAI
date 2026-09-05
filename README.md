@@ -9,6 +9,7 @@ This version incorporates the architectural changes discussed:
 - **Next.js uploads multipart/form-data directly to Spring Boot.**
 - **MinIO stores resume files.**
 - **PostgreSQL remains the source of truth.**
+- **Flyway manages all database schema migrations; Hibernate does not auto-update the schema.**
 - **Redis handles asynchronous work/result delivery.**
 - **Python is only the asynchronous AI worker.**
 - **Transactional Outbox is used for the PostgreSQL → Redis boundary.**
@@ -689,6 +690,21 @@ This is much safer than losing the processing command.
 # WEEK 1 — Foundation + Domain Model
 
 ## Day 1 — Architecture and repository audit
+
+### Day 1 Mandatory Task — Database Migration Baseline
+
+Before creating application entities or moving forward with the domain implementation:
+
+- Add **Flyway** to `backend-core`.
+- Disable Hibernate schema auto-updates (`spring.jpa.hibernate.ddl-auto=validate`).
+- Create the initial Flyway migration under `src/main/resources/db/migration/`, using the `V1__...sql` naming convention.
+- Put the initial PostgreSQL schema in the migration rather than relying on Hibernate to create or modify tables.
+- Start the application against the Docker PostgreSQL instance and verify Flyway applies the migration successfully.
+- Verify Hibernate validates the entity/schema mapping without changing the database.
+- From this point onward, **every schema change must be a new Flyway migration**; do not use `ddl-auto=update`.
+
+**Definition of done:** the application starts with `ddl-auto=validate`, Flyway reports the migration as successfully applied, and no Hibernate schema changes are performed automatically.
+
 
 ### Learn
 
