@@ -1,0 +1,190 @@
+
+Module wise files (entity, dto, repository, controller, service)
+
+1. User Module
+``````````````
+    Role Enum - shared
+    User Entity
+
+    SignupRequest
+    LoginRequest
+
+    UserResponse
+    AuthResponse
+
+    UserRepository
+
+    UserService
+
+    UserController
+
+2. Job Module
+`````````````
+    Job Entity
+
+    CreateJobRequest
+    UpdateJobRequest
+
+    JobResponse
+
+    JobRepository
+
+3. Candidate Module
+```````````````````
+    Candidate Entity
+
+    CreateCandidateRequest
+
+    CandidateResponse
+
+    CandidateRepository
+
+4. Event Module
+```````````````
+    ProcessingEvent Entity
+
+    ProcessingEventResponse
+
+    ProcessingEventRepository
+
+-------------------------------------
+
+Day - 1
+```````
+
+Domain Model, Entity creation , dto definitions.
+
+    Application Starts
+        ↓
+    Hibernate Creates Tables
+        ↓
+    User Entity Exists
+        ↓
+    Job Entity Exists
+        ↓
+    Candidate Entity Exists
+        ↓
+    ProcessingEvent Entity Exists
+        ↓
+    Repositories Exist
+        ↓
+    Database Schema Verified
+
+
+------------------------------------------------------------------
+
+Sign up flow from payload (email, password) to storage in Database
+
+    JSON Request
+        ↓
+    SignupRequest DTO
+        ↓
+    Validation
+        ↓
+    Service
+        ↓
+    User Entity
+        ↓
+    Database
+
+---------------------------------------------------------
+
+why use record instead of class for DTO?
+    Benefits:                       ````
+        Immutable
+        Less code
+        Perfect for DTOs
+        
+        Automatically generates:
+            constructor
+            getters
+            equals
+            hashCode
+            toString
+
+--------------------------------------------------------------
+
+why not use record for entities?
+                       `````````
+
+----------------------------------------------------------------
+
+<Bean Validation>
+
+----------------------------------------------------------------
+
+</API Contract>
+```````````````
+    Database Model
+        ≠
+    API Request Model
+        ≠
+    API Response Model
+
+-----------------------------------------------------------------
+
+Layers and their responsibilities:
+``````````````````````````````````
+_______________________________________________________________________________________
+| Layer      | Responsibility                       | Example                         |
+| ---------- | ------------------------------------ | ------------------------------- |
+| DTO        | Represent incoming/outgoing API data | `SignupRequest`, `UserResponse` |
+| Validation | Ensure request is well-formed        | `@Email`, `@NotBlank`, `@Size`  |
+| Service    | Business logic                       | Hash password, assign role      |
+| Entity     | Represent persisted data             | `User`                          |
+| Repository | Database access                      | `findByEmail()`                 |
+---------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------------
+
+SignupRequest
+`````````````
+    SignupRequest
+        ↓
+    Validation
+        ↓
+    Check email exists
+        ↓
+    BCrypt password hashing
+        ↓
+    Save User
+        ↓
+    Generate JWT
+        ↓
+    Return AuthResponse
+
+-------------------------------------------------------------------------------------------
+
+Day-5
+`````
+
+                HTTP Request
+                     │
+                     ▼
+             Spring Security Filter
+                     │
+          (Public Route?)
+          /          \
+       Yes            No
+       │              │
+       ▼              ▼
+ Continue        Validate JWT
+                     │
+                     ▼
+                 Controller
+                     │
+                     ▼
+                  Service
+                     │
+                     ▼
+                 Repository
+
+----------------------------------------------------------------------------------------------
+
+security/
+
+├── JwtService.java
+├── JwtAuthenticationFilter.java
+├── SecurityConfig.java
+├── CustomUserDetailsService.java
+└── JwtAuthenticationEntryPoint.java

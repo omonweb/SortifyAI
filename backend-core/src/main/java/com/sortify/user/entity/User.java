@@ -1,7 +1,6 @@
 package com.sortify.user.entity;
 
 import com.sortify.common.Role;
-import jakarta.persistence.Entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -22,7 +21,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false,unique = true)
+    @Column(nullable = false,unique = true,length = 255)
     private String email;
 
     @Column(name = "password_hash", nullable = false)
